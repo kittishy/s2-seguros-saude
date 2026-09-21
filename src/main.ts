@@ -5,6 +5,16 @@ import '@fontsource/manrope/latin-700.css';
 import '@fontsource/manrope/latin-800.css';
 import { createMessage, whatsappUrl, PLAN_OPTIONS, type Plan } from './quote';
 
+declare global {
+  interface Window {
+    va?: (...args: unknown[]) => void;
+  }
+}
+
+function trackEvent(name: string, data?: Record<string, string | number | boolean | null>) {
+  window.va?.('event', { name, data });
+}
+
 function requiredElement<T extends HTMLElement>(selector: string): T {
   const element = document.querySelector<T>(selector);
   if (!element) throw new Error(`Elemento necessário ausente: ${selector}`);
@@ -21,6 +31,13 @@ const nav = requiredElement<HTMLElement>('#navigation');
 form.hidden = false;
 menu.hidden = false;
 document.documentElement.classList.add('enhanced');
+
+document.querySelectorAll<HTMLElement>('[data-track]').forEach(element => {
+  element.addEventListener('click', () => {
+    const eventName = element.dataset.track;
+    if (eventName) trackEvent(eventName);
+  });
+});
 
 function closeMenu(restoreFocus = false) {
   menu.setAttribute('aria-expanded', 'false');
@@ -46,6 +63,7 @@ document.querySelectorAll<HTMLAnchorElement>('[data-plan]').forEach(link => {
   link.addEventListener('click', () => {
     const selected = link.dataset.plan;
     if (selected && PLAN_OPTIONS.includes(selected as Plan)) {
+      trackEvent('selecionou_plano', { plano: selected });
       editMessage(); plan.value = selected;
       name.focus({ preventScroll: true });
     }
@@ -59,6 +77,10 @@ form.addEventListener('submit', event => {
   }
   if (!form.reportValidity()) return;
   const message = createMessage({ plan: plan.value, name: name.value, city: city.value, people: people.value });
+  trackEvent('cotacao_preparada', {
+    plano: plan.value || 'Não informado',
+    pessoas: people.value || 'Não informado',
+  });
   requiredElement<HTMLElement>('#message-text').textContent = message;
   requiredElement<HTMLAnchorElement>('#send-whatsapp').href = whatsappUrl(message);
   form.hidden = true; preview.hidden = false;
