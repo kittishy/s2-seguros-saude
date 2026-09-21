@@ -32,6 +32,9 @@ form.hidden = false;
 menu.hidden = false;
 document.documentElement.classList.add('enhanced');
 
+const requestedPlan = new URLSearchParams(window.location.search).get('plano');
+if (requestedPlan && PLAN_OPTIONS.includes(requestedPlan as Plan)) plan.value = requestedPlan;
+
 document.querySelectorAll<HTMLElement>('[data-track]').forEach(element => {
   element.addEventListener('click', () => {
     const eventName = element.dataset.track;
